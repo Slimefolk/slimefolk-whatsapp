@@ -1,0 +1,16 @@
+{
+  "bridgeVersion": "0.5.4",
+  "npmVersions": { "whatsapp-rust-bridge": "0.5.4", "baileys": "7.0.0-rc14", "libsignal": "6.0.0" },
+  "wasmSha256": { "bridge-simd.wasm": "5cb7b88a01e6e71e8646af35cc301c5be7d07110686b3d90ffc8301daed78ecb", "bridge-nosimd.wasm": "fff589536bfa14fe1e3c3d18ce4b6d7711d773c0eadb3af49b64f60364c814b2" },
+  "sources": [
+    { "name": "bridge", "url": "https://codeload.github.com/jlucaso1/whatsapp-rust-bridge/tar.gz/a0b265b852a916c35569da1b2046493c3c06c0db", "sha256": "f1a321aacc17719e6fad4fd24314167cd6602a3f334f8971fcaf82c640281d64" },
+    { "name": "whatsapp-rust", "url": "https://codeload.github.com/oxidezap/whatsapp-rust/tar.gz/95397408f84fda502c3bb2c755fda82a07cab055", "sha256": "9fde8b5433ea99947ecf6725a9327e6e8861b31833d0895a0015ed0ee8c69fef" },
+    { "name": "baileys", "url": "https://codeload.github.com/WhiskeySockets/Baileys/tar.gz/7e7b0757e3f9f3c7789fb1cfd2f241d5002a199a", "sha256": "e768616335cdeac4e853f72d36329381527c3166099c614601cc5317c94b6713" },
+    { "name": "libsignal", "url": "https://codeload.github.com/WhiskeySockets/libsignal-node/tar.gz/bcea72df9ec34d9d9140ab30619cf479c7c144c7", "sha256": "e8237ac721bdf8c622d2f13a4035b69acccb9f0c5999aa5e88944c4f171dd174" },
+    { "name": "rust", "url": "https://codeload.github.com/rust-lang/rust/tar.gz/842bd5be253e17831e318fdbd9d01d716557cc75", "sha256": "4367fc6710d3d9416733ef8aab7001448f1ef067e513b061715b939a8f9bd6b4" }
+  ],
+  "licences": [
+    { "name": "AGPL-3.0", "url": "https://www.gnu.org/licenses/agpl-3.0.txt", "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0" },
+    { "name": "GPL-3.0", "url": "https://www.gnu.org/licenses/gpl-3.0.txt", "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986" }
+  ]
+}

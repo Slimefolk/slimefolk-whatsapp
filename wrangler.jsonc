@@ -1,0 +1,24 @@
+{
+  "name": "slimefolk-whatsapp",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // No public address: the caller reaches this Worker through a service binding only.
+  "workers_dev": false,
+  "preview_urls": false,
+  // Deliberately no `routes`, no `account_id` and no KV/R2/D1 ids here. Add your own account id with `wrangler deploy --config` overrides or CLOUDFLARE_ACCOUNT_ID.
+  "durable_objects": {
+    "bindings": [{ "name": "WHATSAPP", "class_name": "WhatsApp" }]
+  },
+  "migrations": [{ "tag": "v1-whatsapp", "new_sqlite_classes": ["WhatsApp"] }],
+  // Optional, shown by GET /health and GET /licences (AGPL section 13: tell remote users where the source is).
+  "vars": {
+    "SOURCE_URL": "https://example.invalid/REPLACE-WITH-THE-PUBLIC-REPO-URL",
+    "RELEASE": "unreleased"
+  },
+  // whatsapp-rust-bridge (Baileys' WASM helper) inlines its wasm and compiles it from bytes at runtime, which workerd forbids.
+  // scripts/prepare-bridge.mjs writes a copy that imports a precompiled .wasm module; this points the import at it.
+  "alias": {
+    "whatsapp-rust-bridge": "./vendor/whatsapp-rust-bridge.js"
+  }
+}

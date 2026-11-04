@@ -1,0 +1,32 @@
+{
+  "name": "slimefolk-whatsapp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "description": "A WhatsApp (linked-device) client that runs as one Cloudflare Worker plus a Durable Object per account, with a JSON contract over a service binding.",
+  "packageManager": "pnpm@9.15.9",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "prepare:bridge": "node scripts/prepare-bridge.mjs",
+    "predev": "node scripts/prepare-bridge.mjs",
+    "dev": "wrangler dev",
+    "pretest": "node scripts/prepare-bridge.mjs",
+    "test": "vitest run",
+    "pretypecheck": "node scripts/prepare-bridge.mjs",
+    "typecheck": "wrangler types && tsc --noEmit",
+    "deploy": "node scripts/prepare-bridge.mjs && wrangler deploy"
+  },
+  "dependencies": {
+    "baileys": "7.0.0-rc14",
+    "whatsapp-rust-bridge": "0.5.4"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@types/node": "22",
+    "typescript": "5",
+    "vite": "7.3.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.149.0"
+  }
+}
