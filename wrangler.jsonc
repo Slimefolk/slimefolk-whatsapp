@@ -13,7 +13,7 @@
   "migrations": [{ "tag": "v1-whatsapp", "new_sqlite_classes": ["WhatsApp"] }],
   // Optional, shown by GET /health and GET /licences (AGPL section 13: tell remote users where the source is).
   "vars": {
-    "SOURCE_URL": "https://example.invalid/REPLACE-WITH-THE-PUBLIC-REPO-URL",
+    "SOURCE_URL": "https://github.com/kz364/slimefolk-whatsapp",
     "RELEASE": "unreleased"
   },
   // whatsapp-rust-bridge (Baileys' WASM helper) inlines its wasm and compiles it from bytes at runtime, which workerd forbids.

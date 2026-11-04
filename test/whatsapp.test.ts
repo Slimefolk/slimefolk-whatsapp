@@ -411,7 +411,7 @@ describe("the worker's JSON interface", () => {
   it("answers /health for the deploy check without an account and without touching any", async () => {
     const r = await SELF.fetch("https://whatsapp.internal/health");
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ ok: true, service: "slimefolk-whatsapp", contract: CONTRACT_VERSION, release: "unreleased", source: { label: "Source for the WhatsApp program", url: null, identity: "not reported", archive: null } });
+    expect(await r.json()).toEqual({ ok: true, service: "slimefolk-whatsapp", contract: CONTRACT_VERSION, release: "unreleased", source: { label: "Source for the WhatsApp program", url: "https://github.com/kz364/slimefolk-whatsapp", identity: "not reported", archive: null } });
     const notices = await (await SELF.fetch("https://whatsapp.internal/licences")).json() as { name: string; text: string }[];
     expect(notices.find((n) => n.name === "AGPL-3.0")?.text).toContain("GNU AFFERO GENERAL PUBLIC LICENSE");
     expect(notices.find((n) => n.name.includes("Signal file-level"))?.text).toContain("SPDX-License-Identifier: AGPL-3.0-only");
