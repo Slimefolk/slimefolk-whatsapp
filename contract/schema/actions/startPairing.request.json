@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/startPairing.request.json",
+  "title": "startPairing request",
+  "description": "Start linking a phone: a pairing code (give `phone`, digits with country code) or a QR.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "object",
+      "properties": {
+        "method": {
+          "enum": [
+            "code",
+            "qr"
+          ]
+        },
+        "phone": {
+          "type": "string",
+          "pattern": "^\\d{7,15}$"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

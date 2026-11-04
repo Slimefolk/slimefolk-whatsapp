@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/fetchOlder.response.json",
+  "title": "fetchOlder response",
+  "description": "The `value` of a successful reply to fetchOlder.",
+  "$ref": "../defs.json#/$defs/OlderResult"
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/cancelPairing.request.json",
+  "title": "cancelPairing request",
+  "description": "Stop a pairing in progress.",
+  "type": "array",
+  "prefixItems": [],
+  "minItems": 0,
+  "maxItems": 0
+}

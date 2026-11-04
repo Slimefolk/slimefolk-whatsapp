@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/setFrequency.response.json",
+  "title": "setFrequency response",
+  "description": "The `value` of a successful reply to setFrequency.",
+  "$ref": "../defs.json#/$defs/Status"
+}

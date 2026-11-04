@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/chatPage.request.json",
+  "title": "chatPage request",
+  "description": "A page of chats, newest activity first.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "$ref": "../defs.json#/$defs/ChatQuery"
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

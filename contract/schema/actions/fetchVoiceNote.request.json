@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/fetchVoiceNote.request.json",
+  "title": "fetchVoiceNote request",
+  "description": "Download and decrypt one stored voice note into memory (at most 600 seconds, 16 MiB). Audio is never stored.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  ],
+  "minItems": 2,
+  "maxItems": 2
+}

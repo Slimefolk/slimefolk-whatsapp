@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/fetchOlder.request.json",
+  "title": "fetchOlder request",
+  "description": "Ask the phone for older messages of one chat (rate-limited; needs the phone online).",
+  "type": "array",
+  "prefixItems": [
+    {
+      "$ref": "../defs.json#/$defs/OlderQuery"
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

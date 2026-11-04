@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/status.request.json",
+  "title": "status request",
+  "description": "Link state, counts, frequency and health of one account's WhatsApp link.",
+  "type": "array",
+  "prefixItems": [],
+  "minItems": 0,
+  "maxItems": 0
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/rewrapAll.request.json",
+  "title": "rewrapAll request",
+  "description": "Move the sealed login and webhook secret to the current key-encryption key (key rotation).",
+  "type": "array",
+  "prefixItems": [],
+  "minItems": 0,
+  "maxItems": 0
+}

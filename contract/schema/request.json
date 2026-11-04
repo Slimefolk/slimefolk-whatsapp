@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/request.json",
+  "title": "RPC request body",
+  "description": "POST /rpc/<action> with header x-slimefolk-account: <account> and this body. `args` is the positional list given in actions/<action>.request.json (optional arguments may be null or left off the end).",
+  "type": "object",
+  "properties": {
+    "args": {
+      "type": "array"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

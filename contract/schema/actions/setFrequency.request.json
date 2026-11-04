@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/setFrequency.request.json",
+  "title": "setFrequency request",
+  "description": "Minutes between polls: 5, 10, 15, 30 or 60.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "$ref": "../defs.json#/$defs/Frequency"
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

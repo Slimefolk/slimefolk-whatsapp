@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/send.response.json",
+  "title": "send response",
+  "description": "The `value` of a successful reply to send.",
+  "$ref": "../defs.json#/$defs/SendResult"
+}

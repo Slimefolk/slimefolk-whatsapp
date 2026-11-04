@@ -1,0 +1,925 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/defs.json",
+  "title": "Shared definitions",
+  "$defs": {
+    "Frequency": {
+      "description": "Minutes between polls. Polling is the only mode; 'stay connected' (realtime) is future work (Slimefolk #746).",
+      "enum": [
+        5,
+        10,
+        15,
+        30,
+        60
+      ]
+    },
+    "State": {
+      "enum": [
+        "unlinked",
+        "pairing",
+        "linked",
+        "logged_out"
+      ]
+    },
+    "Pairing": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "enum": [
+            "code",
+            "qr"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "description": "The 8-character code to type under WhatsApp, Linked devices, Link with phone number."
+        },
+        "qr": {
+          "type": "string",
+          "description": "Text to draw as a QR code; changes about every 20 seconds."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The number the code was asked for (digits)."
+        },
+        "startedAt": {
+          "type": "integer"
+        },
+        "expiresAt": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "method",
+        "startedAt",
+        "expiresAt"
+      ]
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "defs.json#/$defs/State"
+        },
+        "number": {
+          "type": "string",
+          "description": "The linked number, digits only."
+        },
+        "name": {
+          "type": "string"
+        },
+        "connected": {
+          "type": "boolean"
+        },
+        "frequency": {
+          "$ref": "defs.json#/$defs/Frequency"
+        },
+        "lastPollAt": {
+          "type": "integer"
+        },
+        "nextPollAt": {
+          "type": "integer"
+        },
+        "lastError": {
+          "type": "string"
+        },
+        "consecutiveFailures": {
+          "type": "integer"
+        },
+        "pairing": {
+          "$ref": "defs.json#/$defs/Pairing"
+        },
+        "loggedOutAt": {
+          "type": "integer"
+        },
+        "linkedAt": {
+          "type": "integer"
+        },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "chats": {
+              "type": "integer"
+            },
+            "unread": {
+              "type": "integer"
+            },
+            "messages": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "chats",
+            "unread",
+            "messages"
+          ]
+        },
+        "available": {
+          "type": "boolean",
+          "description": "This deployment has a key to seal the login with and a WhatsApp object."
+        },
+        "hookUrl": {
+          "type": "string",
+          "description": "Where the program reports to. Never the secret."
+        }
+      },
+      "required": [
+        "state",
+        "connected",
+        "frequency",
+        "counts",
+        "available"
+      ]
+    },
+    "Member": {
+      "type": "object",
+      "properties": {
+        "jid": {
+          "type": "string"
+        },
+        "savedName": {
+          "type": "string"
+        },
+        "pushName": {
+          "type": "string",
+          "description": "Chosen by the member; not trusted."
+        },
+        "admin": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "jid"
+      ]
+    },
+    "ChatView": {
+      "type": "object",
+      "properties": {
+        "jid": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "isGroup": {
+          "type": "boolean"
+        },
+        "unread": {
+          "type": "integer"
+        },
+        "lastAt": {
+          "type": "integer"
+        },
+        "preview": {
+          "type": "string",
+          "description": "Start of the newest message. Outside text."
+        },
+        "lastFromMe": {
+          "type": "boolean"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "stored": {
+          "type": "integer",
+          "description": "Messages stored for this chat (0: only WhatsApp's summary arrived)."
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "defs.json#/$defs/Member"
+          }
+        },
+        "memberCount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "jid",
+        "name",
+        "isGroup",
+        "unread",
+        "lastAt",
+        "preview",
+        "lastFromMe"
+      ]
+    },
+    "ChatQuery": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "unreadOnly": {
+          "type": "boolean"
+        },
+        "since": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "before": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "The `next` cursor of an earlier page."
+        },
+        "includeArchived": {
+          "type": "boolean"
+        },
+        "members": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "ChatPage": {
+      "type": "object",
+      "properties": {
+        "chats": {
+          "type": "array",
+          "items": {
+            "$ref": "defs.json#/$defs/ChatView"
+          }
+        },
+        "total": {
+          "type": "integer"
+        },
+        "more": {
+          "type": "boolean"
+        },
+        "next": {
+          "type": "string"
+        },
+        "archivedHidden": {
+          "type": "integer"
+        },
+        "undated": {
+          "type": "integer"
+        },
+        "archivedShown": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "chats",
+        "total",
+        "more",
+        "archivedHidden",
+        "undated",
+        "archivedShown"
+      ]
+    },
+    "MessageView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "chat": {
+          "type": "string"
+        },
+        "sender": {
+          "type": "string"
+        },
+        "senderName": {
+          "type": "string"
+        },
+        "fromMe": {
+          "type": "boolean"
+        },
+        "at": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "chat",
+        "sender",
+        "senderName",
+        "fromMe",
+        "at",
+        "text",
+        "kind"
+      ]
+    },
+    "HistoryKey": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chat": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "at",
+        "chat",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryQuery": {
+      "type": "object",
+      "properties": {
+        "after": {
+          "$ref": "defs.json#/$defs/HistoryKey"
+        },
+        "before": {
+          "$ref": "defs.json#/$defs/HistoryKey"
+        },
+        "order": {
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "chat": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "since": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "afterSeq": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "Mention": {
+      "type": "object",
+      "properties": {
+        "jid": {
+          "type": "string"
+        },
+        "savedName": {
+          "type": "string"
+        },
+        "pushName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "jid"
+      ]
+    },
+    "HistoryMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "chat": {
+          "type": "string"
+        },
+        "chatName": {
+          "type": "string"
+        },
+        "isGroup": {
+          "type": "boolean"
+        },
+        "at": {
+          "type": "integer"
+        },
+        "sender": {
+          "type": "string"
+        },
+        "savedName": {
+          "type": "string"
+        },
+        "pushName": {
+          "type": "string"
+        },
+        "fromMe": {
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "quotedId": {
+          "type": "string"
+        },
+        "mentions": {
+          "type": "array",
+          "items": {
+            "$ref": "defs.json#/$defs/Mention"
+          }
+        },
+        "seq": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "chat",
+        "chatName",
+        "isGroup",
+        "at",
+        "sender",
+        "fromMe",
+        "text",
+        "kind"
+      ]
+    },
+    "HistoryPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "defs.json#/$defs/HistoryMessage"
+          }
+        },
+        "more": {
+          "type": "boolean"
+        },
+        "oldestAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "newestAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "newestSeq": {
+          "type": "integer"
+        },
+        "state": {
+          "$ref": "defs.json#/$defs/State"
+        },
+        "retain": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "number"
+            },
+            "maxMessages": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "days",
+            "maxMessages"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "more",
+        "oldestAt",
+        "newestAt",
+        "state",
+        "retain"
+      ]
+    },
+    "OlderQuery": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "chat"
+      ],
+      "additionalProperties": false
+    },
+    "OlderResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "loaded",
+            "complete",
+            "no_answer",
+            "rate_limited",
+            "no_anchor",
+            "unavailable"
+          ]
+        },
+        "chat": {
+          "type": "string"
+        },
+        "chatName": {
+          "type": "string"
+        },
+        "added": {
+          "type": "integer"
+        },
+        "stored": {
+          "type": "integer"
+        },
+        "oldestAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "anchor": {
+          "$ref": "defs.json#/$defs/HistoryKey"
+        },
+        "retryInMs": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "chat",
+        "chatName",
+        "added",
+        "stored",
+        "oldestAt",
+        "message"
+      ]
+    },
+    "VoiceNote": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "ok"
+            },
+            "audio": {
+              "type": "string",
+              "description": "Base64 audio. Transient: never store or log it."
+            },
+            "mime": {
+              "type": "string"
+            },
+            "seconds": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "status",
+            "audio",
+            "mime",
+            "seconds"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "too long",
+                "failed",
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "status"
+          ]
+        }
+      ]
+    },
+    "PollResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "const": true
+            },
+            "newMessages": {
+              "type": "integer"
+            },
+            "at": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "ok",
+            "newMessages",
+            "at"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "const": false
+            },
+            "error": {
+              "type": "string"
+            },
+            "at": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "ok",
+            "error",
+            "at"
+          ]
+        }
+      ]
+    },
+    "SendResult": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "const": true
+            },
+            "id": {
+              "type": "string"
+            },
+            "at": {
+              "type": "integer"
+            },
+            "duplicate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "ok",
+            "id",
+            "at"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "const": false
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "ok",
+            "error"
+          ]
+        }
+      ]
+    },
+    "Resolved": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "jid": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "jid"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "candidates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "jid": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "jid",
+                  "name"
+                ]
+              }
+            }
+          },
+          "required": [
+            "candidates"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "none": {
+              "const": true
+            }
+          },
+          "required": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "NameOf": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "number": {
+          "type": "string"
+        },
+        "jid": {
+          "type": "string"
+        },
+        "stored": {
+          "type": "integer"
+        },
+        "known": {
+          "type": "boolean"
+        },
+        "lastAt": {
+          "type": "integer"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "olderComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "number"
+      ]
+    },
+    "ReplyError": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ok",
+        "error",
+        "status"
+      ]
+    },
+    "Ack": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        }
+      },
+      "required": [
+        "ok"
+      ]
+    },
+    "RewrapResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "rewrapped": {
+          "type": "integer"
+        },
+        "failed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ok",
+        "rewrapped",
+        "failed"
+      ]
+    },
+    "NewMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "at": {
+          "type": "integer"
+        },
+        "chat": {
+          "type": "string"
+        },
+        "chatName": {
+          "type": "string"
+        },
+        "isGroup": {
+          "type": "boolean"
+        },
+        "sender": {
+          "type": "string"
+        },
+        "savedName": {
+          "type": "string"
+        },
+        "pushName": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "at",
+        "chat",
+        "chatName",
+        "isGroup",
+        "sender",
+        "text",
+        "kind"
+      ]
+    },
+    "Notice": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "linked",
+            "logged_out",
+            "failing",
+            "recovered",
+            "refused"
+          ]
+        },
+        "level": {
+          "enum": [
+            "info",
+            "warn"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "level",
+        "text"
+      ]
+    }
+  }
+}

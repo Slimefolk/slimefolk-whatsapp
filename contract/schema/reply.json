@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/reply.json",
+  "title": "Reply envelope",
+  "description": "Every RPC answer is HTTP JSON: success {ok:true,value}, refusal {ok:false,error,status}. A refusal is data; the HTTP status repeats `status`.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "value": {}
+      },
+      "required": [
+        "ok",
+        "value"
+      ]
+    },
+    {
+      "$ref": "defs.json#/$defs/ReplyError"
+    }
+  ]
+}

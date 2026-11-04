@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/configure.request.json",
+  "title": "configure request",
+  "description": "Where to post webhooks (https, or http on localhost) and the secret that signs them (16 characters or more).",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "object",
+      "properties": {
+        "hookUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "secret": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "hookUrl",
+        "secret"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

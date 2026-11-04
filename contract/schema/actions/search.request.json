@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/search.request.json",
+  "title": "search request",
+  "description": "Search stored message text, optionally within one chat.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "chat": {
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  ],
+  "minItems": 2,
+  "maxItems": 2
+}

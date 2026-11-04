@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/chats.response.json",
+  "title": "chats response",
+  "description": "The `value` of a successful reply to chats.",
+  "type": "array",
+  "items": {
+    "$ref": "../defs.json#/$defs/ChatView"
+  }
+}

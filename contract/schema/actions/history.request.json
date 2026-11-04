@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/history.request.json",
+  "title": "history request",
+  "description": "Read-only walk over stored messages, paged by (at, chat, id) or by store sequence.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "$ref": "../defs.json#/$defs/HistoryQuery"
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/send.request.json",
+  "title": "send request",
+  "description": "Send one text message. `key` makes a repeat find the first result instead of sending twice.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  ],
+  "minItems": 3,
+  "maxItems": 3
+}

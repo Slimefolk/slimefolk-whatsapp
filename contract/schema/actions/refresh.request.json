@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/refresh.request.json",
+  "title": "refresh request",
+  "description": "Poll now: connect, take what is queued, disconnect.",
+  "type": "array",
+  "prefixItems": [],
+  "minItems": 0,
+  "maxItems": 0
+}

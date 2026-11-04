@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/messages.request.json",
+  "title": "messages request",
+  "description": "Stored messages of one chat, newest last.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    {
+      "type": "object",
+      "properties": {
+        "since": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  ],
+  "minItems": 2,
+  "maxItems": 2
+}

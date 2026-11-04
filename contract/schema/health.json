@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/health.json",
+  "title": "Health",
+  "description": "GET /health (also HEAD). Says nothing about any account.",
+  "type": "object",
+  "properties": {
+    "ok": {
+      "const": true
+    },
+    "service": {
+      "const": "slimefolk-whatsapp"
+    },
+    "contract": {
+      "type": "string",
+      "description": "CONTRACT_VERSION this program implements."
+    },
+    "release": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "identity": {
+          "type": "string"
+        },
+        "archive": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "url",
+                "sha256"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "url",
+        "identity",
+        "archive"
+      ]
+    }
+  },
+  "required": [
+    "ok",
+    "service",
+    "contract",
+    "release",
+    "source"
+  ]
+}

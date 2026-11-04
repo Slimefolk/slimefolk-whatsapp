@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/fetchVoiceNote.response.json",
+  "title": "fetchVoiceNote response",
+  "description": "The `value` of a successful reply to fetchVoiceNote.",
+  "$ref": "../defs.json#/$defs/VoiceNote"
+}

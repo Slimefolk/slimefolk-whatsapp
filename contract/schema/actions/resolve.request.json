@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/resolve.request.json",
+  "title": "resolve request",
+  "description": "Turn a name or number into a chat id, or candidates when a name is ambiguous.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}

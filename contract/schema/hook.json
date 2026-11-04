@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/hook.json",
+  "title": "Webhook body",
+  "description": "What the program POSTs to the hookUrl given to `configure`, with headers x-slimefolk-account, x-slimefolk-timestamp (ms) and x-slimefolk-signature = hex HMAC-SHA256(secret, `${timestamp}.${body}`). Verify with verifyWhatsAppHook; reject timestamps more than 5 minutes off.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "messages"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "defs.json#/$defs/NewMessage"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "notice"
+        },
+        "notice": {
+          "$ref": "defs.json#/$defs/Notice"
+        }
+      },
+      "required": [
+        "type",
+        "notice"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "event"
+        },
+        "name": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "data"
+      ]
+    }
+  ]
+}

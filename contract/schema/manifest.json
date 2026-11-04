@@ -1,0 +1,96 @@
+{
+  "$comment": "Maps each action to its schema files. Request = the `args` array of POST /rpc/<action>; response = the `value` of a successful WaReply.",
+  "version": "1.0.0",
+  "actions": {
+    "status": {
+      "description": "Link state, counts, frequency and health of one account's WhatsApp link.",
+      "request": "actions/status.request.json",
+      "response": "actions/status.response.json"
+    },
+    "startPairing": {
+      "description": "Start linking a phone: a pairing code (give `phone`, digits with country code) or a QR.",
+      "request": "actions/startPairing.request.json",
+      "response": "actions/startPairing.response.json"
+    },
+    "cancelPairing": {
+      "description": "Stop a pairing in progress.",
+      "request": "actions/cancelPairing.request.json",
+      "response": "actions/cancelPairing.response.json"
+    },
+    "unpair": {
+      "description": "Unlink: tells WhatsApp when it can, forgets the login and everything stored.",
+      "request": "actions/unpair.request.json",
+      "response": "actions/unpair.response.json"
+    },
+    "setFrequency": {
+      "description": "Minutes between polls: 5, 10, 15, 30 or 60.",
+      "request": "actions/setFrequency.request.json",
+      "response": "actions/setFrequency.response.json"
+    },
+    "refresh": {
+      "description": "Poll now: connect, take what is queued, disconnect.",
+      "request": "actions/refresh.request.json",
+      "response": "actions/refresh.response.json"
+    },
+    "chats": {
+      "description": "The newest chats (older form of chatPage; use chatPage).",
+      "request": "actions/chats.request.json",
+      "response": "actions/chats.response.json"
+    },
+    "chatPage": {
+      "description": "A page of chats, newest activity first.",
+      "request": "actions/chatPage.request.json",
+      "response": "actions/chatPage.response.json"
+    },
+    "resolve": {
+      "description": "Turn a name or number into a chat id, or candidates when a name is ambiguous.",
+      "request": "actions/resolve.request.json",
+      "response": "actions/resolve.response.json"
+    },
+    "messages": {
+      "description": "Stored messages of one chat, newest last.",
+      "request": "actions/messages.request.json",
+      "response": "actions/messages.response.json"
+    },
+    "search": {
+      "description": "Search stored message text, optionally within one chat.",
+      "request": "actions/search.request.json",
+      "response": "actions/search.response.json"
+    },
+    "history": {
+      "description": "Read-only walk over stored messages, paged by (at, chat, id) or by store sequence.",
+      "request": "actions/history.request.json",
+      "response": "actions/history.response.json"
+    },
+    "fetchVoiceNote": {
+      "description": "Download and decrypt one stored voice note into memory (at most 600 seconds, 16 MiB). Audio is never stored.",
+      "request": "actions/fetchVoiceNote.request.json",
+      "response": "actions/fetchVoiceNote.response.json"
+    },
+    "fetchOlder": {
+      "description": "Ask the phone for older messages of one chat (rate-limited; needs the phone online).",
+      "request": "actions/fetchOlder.request.json",
+      "response": "actions/fetchOlder.response.json"
+    },
+    "nameOf": {
+      "description": "The display name, number and what is stored for a chat id.",
+      "request": "actions/nameOf.request.json",
+      "response": "actions/nameOf.response.json"
+    },
+    "send": {
+      "description": "Send one text message. `key` makes a repeat find the first result instead of sending twice.",
+      "request": "actions/send.request.json",
+      "response": "actions/send.response.json"
+    },
+    "configure": {
+      "description": "Where to post webhooks (https, or http on localhost) and the secret that signs them (16 characters or more).",
+      "request": "actions/configure.request.json",
+      "response": "actions/configure.response.json"
+    },
+    "rewrapAll": {
+      "description": "Move the sealed login and webhook secret to the current key-encryption key (key rotation).",
+      "request": "actions/rewrapAll.request.json",
+      "response": "actions/rewrapAll.response.json"
+    }
+  }
+}

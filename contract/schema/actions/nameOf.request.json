@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slimefolk-whatsapp.invalid/contract/v1/actions/nameOf.request.json",
+  "title": "nameOf request",
+  "description": "The display name, number and what is stored for a chat id.",
+  "type": "array",
+  "prefixItems": [
+    {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  ],
+  "minItems": 1,
+  "maxItems": 1
+}
