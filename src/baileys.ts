@@ -9,6 +9,7 @@ import type { AuthenticationCreds, ConnectionState, Contact, WAMessage, SignalDa
 import { AUTH_CREDS_KEY, type AuthKv, type WaAdapter, type WaChat, type WaCloseReason, type WaConnectOptions, type WaConnection, type WaContact, type WaGroup, type WaGroupMember, type WaLidPair, type WaMessage } from "./adapter.ts";
 import { installWorkerdBufferFix } from "./buffer-fix.ts";
 import { waTestHooks } from "./testing.ts";
+import { installWorkerdPbkdf2Fix } from "./pbkdf2-fix.ts";
 import { installWorkerdTransport } from "./transport.ts";
 import { fetchVoiceNote } from "./voice.ts";
 
@@ -248,6 +249,7 @@ function closeReason(code: number | undefined): WaCloseReason {
 export function baileysAdapter(): WaAdapter {
   installWorkerdTransport();
   installWorkerdBufferFix();
+  installWorkerdPbkdf2Fix();
   return {
     fetchVoiceNote,
     async connect(o: WaConnectOptions): Promise<WaConnection> {

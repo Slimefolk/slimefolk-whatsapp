@@ -35,12 +35,13 @@ It is a separate, fully open-source program (AGPL-3.0). Whatever calls it talks 
 
 ### Why it runs in workerd
 
-Baileys runs in the Workers runtime with `nodejs_compat` and four small patches, none inside Baileys' own files:
+Baileys runs in the Workers runtime with `nodejs_compat` and five small patches, none inside Baileys' own files:
 
 1. **WASM bridge precompiled.** `whatsapp-rust-bridge` compiles its `.wasm` from bytes at import, which workerd forbids. `scripts/prepare-bridge.mjs` extracts it to `vendor/*.wasm` and writes a loader that imports the precompiled module; `wrangler.jsonc` aliases the package to it.
 2. **WebSocket transport.** Baileys uses the `ws` package, which cannot open sockets in workerd. `src/transport.ts` gives it the same surface over `fetch` with `Upgrade: websocket`.
 3. `binaryType = "arraybuffer"` on the socket.
 4. **`Buffer#utf8Write` wrapper** (`src/buffer-fix.ts`): workerd treats a missing length differently from Node, which breaks protobufjs.
+5. **PBKDF2 above 100,000 iterations** (`src/pbkdf2-fix.ts`): workerd refuses them, and Baileys derives the pairing-code key at 131,072. The patch computes that one derivation in plain JavaScript.
 
 Memory (128 MB per object) is the constraint, not CPU. Full history sync is off and media is never downloaded (attachments are named, voice notes can be fetched into memory on request).
 
