@@ -6,7 +6,9 @@
   "license": "AGPL-3.0-only",
   "description": "A WhatsApp (linked-device) client that runs as one Cloudflare Worker plus a Durable Object per account, with a JSON contract over a service binding.",
   "packageManager": "pnpm@9.15.9",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "prepare:bridge": "node scripts/prepare-bridge.mjs",
     "predev": "node scripts/prepare-bridge.mjs",
@@ -15,7 +17,9 @@
     "test": "vitest run",
     "pretypecheck": "node scripts/prepare-bridge.mjs",
     "typecheck": "wrangler types && tsc --noEmit",
-    "deploy": "node scripts/prepare-bridge.mjs && wrangler deploy"
+    "deploy": "node scripts/prepare-bridge.mjs && wrangler deploy",
+    "dev:mcp": "wrangler dev --config mcp/wrangler.jsonc",
+    "deploy:mcp": "wrangler deploy --config mcp/wrangler.jsonc"
   },
   "dependencies": {
     "baileys": "7.0.0-rc14",

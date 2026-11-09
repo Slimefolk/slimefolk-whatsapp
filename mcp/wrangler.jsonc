@@ -1,0 +1,17 @@
+{
+  "name": "slimefolk-whatsapp-mcp",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-08-01",
+  // The public surface: agents reach /mcp here with a bearer token. The WhatsApp program itself stays without an address.
+  "workers_dev": true,
+  "preview_urls": false,
+  // Deploy the WhatsApp program (../wrangler.jsonc) first: this binds to it by name.
+  "services": [{ "binding": "WHATSAPP", "service": "slimefolk-whatsapp" }],
+  "vars": {
+    // The WhatsApp account (one Durable Object) a token uses when its entry names none.
+    "ACCOUNT": "default",
+    "SOURCE_URL": "https://github.com/kz364/slimefolk-whatsapp"
+  }
+  // Secret MCP_TOKENS: JSON {"<name>": {"token": "<32+ chars>", "scope": "agent" | "admin", "account"?: "<account>"}}.
+  // Set it with `wrangler secret put MCP_TOKENS --config mcp/wrangler.jsonc`.
+}

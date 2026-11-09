@@ -14,5 +14,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "contract", "test", "worker-configuration.d.ts", "vitest.config.ts"]
+  "include": ["src", "contract", "mcp", "test", "worker-configuration.d.ts", "vitest.config.ts"]
 }

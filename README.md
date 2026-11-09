@@ -55,6 +55,7 @@ Memory (128 MB per object) is the constraint, not CPU. Full history sync is off 
 | `src/baileys.ts`, `src/transport.ts`, `src/buffer-fix.ts`, `src/voice.ts` | The protocol library seam and its workerd patches. |
 | `src/store.ts`, `src/schema.ts`, `src/sql.ts`, `src/seal.ts`, `src/timer.ts` | SQLite store and migrations, sealed login, the one timer. |
 | `src/fake.ts`, `src/testing.ts` | A scripted fake WhatsApp and the test seams (never active in production). |
+| `mcp/` | The optional MCP Worker for agents (see below). |
 | `test/` | Tests; `test/support/` holds a fake WhatsApp server speaking the Noise handshake. |
 | `vendor/`, `scripts/prepare-bridge.mjs` | The precompiled bridge (regenerated from `node_modules` by `pnpm prepare:bridge`). |
 | `licences/` | Licence texts, the notice bundle served at `/licences`, and the pinned upstream sources. |
@@ -86,6 +87,24 @@ Nothing here deploys itself. When you decide to:
 5. In the calling Worker's config, bind it: `"services": [{ "binding": "WHATSAPP", "service": "slimefolk-whatsapp" }]`, call `POST https://whatsapp.internal/rpc/<action>` on the binding with the header `x-slimefolk-account: <account>`, and use `configure` to tell the program where to post its webhook.
 
 Changes take effect only after a redeploy. The first deploy runs the `v1-whatsapp` migration (SQLite-backed `WhatsApp` class).
+
+## MCP server for agents
+
+`mcp/` is a second, optional Worker: a remote MCP server (Streamable HTTP, stateless) that lets AI agents read and send WhatsApp messages. It is the only public surface; it reaches the program above through a service binding, so the program itself keeps no address.
+
+- **Auth:** a bearer token per agent, from the `MCP_TOKENS` secret: `{"<name>": {"token": "<32+ chars>", "scope": "agent" | "admin", "account": "<optional>"}}`. Tokens shorter than 32 characters are ignored.
+- **Scopes:** `agent` gets `whatsapp_status`, `whatsapp_list_chats`, `whatsapp_find_chat`, `whatsapp_read_chat`, `whatsapp_search`, `whatsapp_history`, `whatsapp_contact`, `whatsapp_refresh`, `whatsapp_fetch_older` and `whatsapp_send`. `admin` adds `whatsapp_start_pairing`, `whatsapp_cancel_pairing`, `whatsapp_set_frequency` and `whatsapp_unpair`. `configure`, `rewrapAll` and voice notes are never exposed.
+- **Account:** each token uses its own `account` or the `ACCOUNT` var (one Durable Object, one linked phone, per account).
+- Tools accept a chat id or a name or number, which is resolved first; a name that matches several chats is refused with the candidates.
+
+Deploy it after the program:
+
+```sh
+pnpm exec wrangler secret put MCP_TOKENS --config mcp/wrangler.jsonc
+pnpm deploy:mcp
+```
+
+Then point an MCP client at `https://slimefolk-whatsapp-mcp.<your-subdomain>.workers.dev/mcp` with the header `Authorization: Bearer <token>`. To link a phone, call `whatsapp_start_pairing` with an admin token and type the code on the phone under WhatsApp, Linked devices, Link with phone number.
 
 ## Licence
 
