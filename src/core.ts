@@ -453,6 +453,7 @@ export class WhatsAppCore {
         void this.soft(() => this.reopenAfterPairing());
         return;
       }
+      console.warn("whatsapp: pairing connection closed", reason, s.closed?.detail ?? "");
       void this.soft(() => this.failPairing(reason === "forbidden" ? "WhatsApp refused the connection. The number may be restricted." : "The connection to WhatsApp dropped before the code was entered. Try again."));
       return;
     }

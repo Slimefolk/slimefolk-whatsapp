@@ -83,7 +83,7 @@ Nothing here deploys itself. When you decide to:
    openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n' | pnpm exec wrangler secret put KEY_ENCRYPTION_KEY
    ```
    (When rotating, put the old key in `KEY_ENCRYPTION_KEY_PREVIOUS`, deploy, call `rewrapAll`, then drop it.)
-4. `pnpm deploy` (prepares the bridge, then `wrangler deploy`). The Worker has no route and `workers_dev` is off: it is reachable only by a service binding.
+4. `pnpm run deploy` (prepares the bridge, then `wrangler deploy`). The Worker has no route and `workers_dev` is off: it is reachable only by a service binding.
 5. In the calling Worker's config, bind it: `"services": [{ "binding": "WHATSAPP", "service": "slimefolk-whatsapp" }]`, call `POST https://whatsapp.internal/rpc/<action>` on the binding with the header `x-slimefolk-account: <account>`, and use `configure` to tell the program where to post its webhook.
 
 Changes take effect only after a redeploy. The first deploy runs the `v1-whatsapp` migration (SQLite-backed `WhatsApp` class).
@@ -101,7 +101,7 @@ Deploy it after the program:
 
 ```sh
 pnpm exec wrangler secret put MCP_TOKENS --config mcp/wrangler.jsonc
-pnpm deploy:mcp
+pnpm run deploy:mcp
 ```
 
 Then point an MCP client at `https://slimefolk-whatsapp-mcp.<your-subdomain>.workers.dev/mcp` with the header `Authorization: Bearer <token>`. To link a phone, call `whatsapp_start_pairing` with an admin token and type the code on the phone under WhatsApp, Linked devices, Link with phone number.

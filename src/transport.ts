@@ -61,14 +61,23 @@ export class WorkerdSocketClient extends AbstractSocketClient {
     if (httpUrl.protocol === "wss:") httpUrl.protocol = "https:";
     if (httpUrl.protocol === "ws:") httpUrl.protocol = "http:";
     const timeoutMs = this.config.connectTimeoutMs ?? 20_000;
-    const resp = await doFetch(httpUrl.toString(), {
-      headers: {
-        Upgrade: "websocket",
-        Origin: "https://web.whatsapp.com",
-        ...(this.config.options?.headers ?? {}),
-      },
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    // The timeout covers the upgrade only. In workerd the fetch's signal stays tied to the socket it returns, so a signal that
+    // fires later (AbortSignal.timeout) cuts a live connection with 1006; this one is cleared as soon as the upgrade answers.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(new Error("websocket upgrade timed out")), timeoutMs);
+    let resp: Response;
+    try {
+      resp = await doFetch(httpUrl.toString(), {
+        headers: {
+          Upgrade: "websocket",
+          Origin: "https://web.whatsapp.com",
+          ...(this.config.options?.headers ?? {}),
+        },
+        signal: abort.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     const ws = resp.webSocket;
     if (!ws) {
       this.emit("unexpected-response", resp);
@@ -78,6 +87,7 @@ export class WorkerdSocketClient extends AbstractSocketClient {
     // Baileys needs bytes synchronously, so ask for ArrayBuffer before accepting.
     ws.binaryType = "arraybuffer";
     ws.accept();
+    const opened = Date.now();
     this.socket = ws;
     this.pending = false;
     ws.addEventListener("message", (ev: MessageEvent) => {
@@ -87,6 +97,7 @@ export class WorkerdSocketClient extends AbstractSocketClient {
       this.emit("message", buf);
     });
     ws.addEventListener("close", (ev: CloseEvent) => {
+      console.warn("whatsapp: socket closed", ev.code, ev.reason || "", `after ${Math.round((Date.now() - opened) / 1000)}s`);
       this.emit("close", ev.code, ev.reason);
     });
     ws.addEventListener("error", (ev: Event) => {
