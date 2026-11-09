@@ -1,6 +1,6 @@
 // The MCP Worker (mcp/src/worker.ts) in front of the real WhatsApp program: its WHATSAPP service binding is the program under test
 // (SELF), which talks to the scripted fake WhatsApp. Checks the token gate, the scopes, and that tools reach the right actions.
-import { SELF, env, runInDurableObject } from "cloudflare:test";
+import { SELF, createExecutionContext, env, runInDurableObject } from "cloudflare:test";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import mcp, { TOOLS, type McpEnv } from "../mcp/src/worker.ts";
 import { FakeWhatsApp, waMsg } from "../src/fake.ts";
@@ -8,6 +8,7 @@ import { resetWaTestHooks, waTestHooks } from "../src/testing.ts";
 
 const AGENT = "agent-token-0123456789abcdef0123456789";
 const ADMIN = "admin-token-0123456789abcdef0123456789";
+const PASSPHRASE = "correct horse battery staple 0123456789";
 const CAROL = "15550101@s.whatsapp.net";
 let n = 0;
 
@@ -25,6 +26,8 @@ beforeEach(() => {
   mcpEnv = {
     WHATSAPP: SELF as unknown as Fetcher,
     ACCOUNT: account,
+    OAUTH_KV: env.OAUTH_KV,
+    OAUTH_PASSPHRASE: PASSPHRASE,
     MCP_TOKENS: JSON.stringify({ claude: { token: AGENT, scope: "agent" }, me: { token: ADMIN, scope: "admin" }, weak: { token: "short", scope: "admin" } }),
   };
 });
@@ -34,7 +37,7 @@ let rid = 0;
 async function post(body: unknown, token?: string): Promise<Response> {
   const headers: Record<string, string> = { "content-type": "application/json", accept: "application/json, text/event-stream" };
   if (token) headers.authorization = `Bearer ${token}`;
-  return mcp.fetch(new Request("https://mcp.example.test/mcp", { method: "POST", headers, body: JSON.stringify(body) }), mcpEnv);
+  return mcp.fetch(new Request("https://mcp.example.test/mcp", { method: "POST", headers, body: JSON.stringify(body) }), mcpEnv, createExecutionContext());
 }
 async function rpc(method: string, params: unknown, token = AGENT): Promise<any> {
   const r = await post({ jsonrpc: "2.0", id: ++rid, method, params }, token);
@@ -62,7 +65,7 @@ describe("the MCP Worker", () => {
     expect((await post(init)).status).toBe(401);
     expect((await post(init, "not-a-token-0123456789abcdef0123456789")).status).toBe(401);
     expect((await post(init, "short")).status).toBe(401);
-    expect((await mcp.fetch(new Request("https://mcp.example.test/mcp", { method: "POST", headers: { authorization: `Bearer ${AGENT}` }, body: "{}" }), { ...mcpEnv, MCP_TOKENS: undefined })).status).toBe(401);
+    expect((await mcp.fetch(new Request("https://mcp.example.test/mcp", { method: "POST", headers: { authorization: `Bearer ${AGENT}` }, body: "{}" }), { ...mcpEnv, MCP_TOKENS: undefined }, createExecutionContext())).status).toBe(401);
     expect((await post(init, AGENT)).status).toBe(200);
   });
 
@@ -73,8 +76,8 @@ describe("the MCP Worker", () => {
     expect((await rpc("ping", {})).result).toEqual({});
     expect((await post({ jsonrpc: "2.0", method: "notifications/initialized" }, AGENT)).status).toBe(202);
     expect((await rpc("nope", {})).error.code).toBe(-32601);
-    expect((await mcp.fetch(new Request("https://mcp.example.test/mcp", { headers: { authorization: `Bearer ${AGENT}` } }), mcpEnv)).status).toBe(405);
-    expect((await mcp.fetch(new Request("https://mcp.example.test/health"), mcpEnv)).status).toBe(200);
+    expect((await mcp.fetch(new Request("https://mcp.example.test/mcp", { headers: { authorization: `Bearer ${AGENT}` } }), mcpEnv, createExecutionContext())).status).toBe(405);
+    expect((await mcp.fetch(new Request("https://mcp.example.test/health"), mcpEnv, createExecutionContext())).status).toBe(200);
   });
 
   it("gives an agent token the read and send tools only; admin adds the rest", async () => {
@@ -112,5 +115,75 @@ describe("the MCP Worker", () => {
 
     expect(await tool("whatsapp_unpair", { confirm: "yes" }, ADMIN)).toMatchObject({ isError: true });
     expect((await tool("whatsapp_unpair", { confirm: "unlink" }, ADMIN)).value).toMatchObject({ state: "unlinked" });
+  });
+});
+
+describe("OAuth sign-in (claude.ai and Desktop connectors)", () => {
+  const ORIGIN = "https://mcp.example.test";
+  const REDIRECT = "https://claude.ai/api/mcp/auth_callback";
+  const go = (path: string, init: RequestInit = {}) => mcp.fetch(new Request(`${ORIGIN}${path}`, { redirect: "manual", ...init }), mcpEnv, createExecutionContext());
+  const b64url = (b: ArrayBuffer | Uint8Array) => Buffer.from(b instanceof Uint8Array ? b : new Uint8Array(b)).toString("base64url");
+  const cookies = (r: Response) => r.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+
+  async function startAuthorize(): Promise<{ query: string; verifier: string; page: Response; cookie: string; handle: string; clientId: string }> {
+    const reg = await go("/oauth/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ client_name: "Claude", redirect_uris: [REDIRECT], token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"], response_types: ["code"] }) });
+    expect(reg.status).toBe(201);
+    const clientId = ((await reg.json()) as { client_id: string }).client_id;
+    const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+    const query = new URLSearchParams({ response_type: "code", client_id: clientId, redirect_uri: REDIRECT, code_challenge: challenge, code_challenge_method: "S256", state: "st-1", scope: "whatsapp", resource: `${ORIGIN}/mcp` }).toString();
+    const page = await go(`/authorize?${query}`);
+    const text = await page.clone().text();
+    const handle = /name="handle" value="([^"]+)"/.exec(text)?.[1] ?? "";
+    return { query, verifier, page, cookie: cookies(page), handle, clientId };
+  }
+  const submit = (s: { query: string; cookie: string; handle: string }, fields: Record<string, string>) =>
+    go(`/authorize?${s.query}`, { method: "POST", headers: { cookie: s.cookie, "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ handle: s.handle, ...fields }).toString() });
+
+  it("advertises itself to a client that arrives without a token", async () => {
+    const r = await go("/mcp", { method: "POST", body: "{}" });
+    expect(r.status).toBe(401);
+    expect(r.headers.get("www-authenticate")).toContain("resource_metadata");
+    const meta = (await (await go("/.well-known/oauth-protected-resource/mcp")).json()) as { resource: string; authorization_servers: string[] };
+    expect(meta.resource).toBe(`${ORIGIN}/mcp`);
+    expect((await go("/.well-known/oauth-authorization-server")).status).toBe(200);
+  });
+
+  it("signs in with the passphrase and gets the agent tools only", async () => {
+    const s = await startAuthorize();
+    expect(s.page.status).toBe(200);
+    expect(await s.page.text()).toContain("Allow Claude to use your WhatsApp?");
+    expect(s.handle).not.toBe("");
+
+    const wrong = await submit(s, { decision: "approve", passphrase: "guess" });
+    expect(wrong.status).toBe(401);
+    expect(await wrong.text()).toContain("That passphrase is not right.");
+
+    const ok = await submit(s, { decision: "approve", passphrase: PASSPHRASE });
+    expect(ok.status).toBe(302);
+    const back = new URL(ok.headers.get("location")!);
+    expect(back.origin + back.pathname).toBe(REDIRECT);
+    expect(back.searchParams.get("state")).toBe("st-1");
+    const code = back.searchParams.get("code")!;
+
+    const tok = await go("/oauth/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: REDIRECT, client_id: s.clientId, code_verifier: s.verifier, resource: `${ORIGIN}/mcp` }).toString() });
+    expect(tok.status).toBe(200);
+    const { access_token } = (await tok.json()) as { access_token: string };
+
+    const list = await (await go("/mcp", { method: "POST", headers: { authorization: `Bearer ${access_token}`, "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) })).json() as any;
+    const names = list.result.tools.map((t: { name: string }) => t.name);
+    expect(names).toContain("whatsapp_send");
+    expect(names).not.toContain("whatsapp_unpair");
+    const status = await (await go("/mcp", { method: "POST", headers: { authorization: `Bearer ${access_token}`, "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "whatsapp_status", arguments: {} } }) })).json() as any;
+    expect(JSON.parse(status.result.content[0].text)).toMatchObject({ state: "unlinked" });
+  });
+
+  it("sends a denial back to the client, and refuses sign-in when no passphrase is set", async () => {
+    const s = await startAuthorize();
+    const denied = await submit(s, { decision: "deny" });
+    expect(denied.status).toBe(302);
+    expect(new URL(denied.headers.get("location")!).searchParams.get("error")).toBe("access_denied");
+    mcpEnv.OAUTH_PASSPHRASE = undefined;
+    expect((await go(`/authorize?${s.query}`)).status).toBe(503);
   });
 });

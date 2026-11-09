@@ -22,6 +22,7 @@
     "deploy:mcp": "wrangler deploy --config mcp/wrangler.jsonc"
   },
   "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.2.4",
     "baileys": "7.0.0-rc14",
     "whatsapp-rust-bridge": "0.5.4"
   },

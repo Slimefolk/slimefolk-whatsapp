@@ -1,14 +1,17 @@
 // The MCP Worker: a remote MCP server (Streamable HTTP, stateless, JSON answers) in front of the WhatsApp program. It is a second
 // Worker on purpose: the program keeps no public address and no auth of its own, and is reached from here only through a service
-// binding (WHATSAPP). This Worker is the one public surface: it checks a bearer token, offers a fixed set of tools, and turns each
+// binding (WHATSAPP). This Worker is the one public surface: it checks who is calling, offers a fixed set of tools, and turns each
 // tool call into one `POST /rpc/<action>` of the JSON contract.
 //
-//   POST /mcp     MCP JSON-RPC (initialize, tools/list, tools/call, ping), header `Authorization: Bearer <token>`.
-//   GET  /health  no token; says nothing about any account.
+//   POST /mcp        MCP JSON-RPC (initialize, tools/list, tools/call, ping), header `Authorization: Bearer <token>`.
+//   GET  /health     no token; says nothing about any account.
+//   OAuth            /.well-known/*, /oauth/register, /oauth/token and the consent page /authorize, for clients that sign in
+//                    (claude.ai, Claude Desktop connectors). Approving asks for the OAUTH_PASSPHRASE secret; OAuth gets "agent".
 //
-// Tokens live in the MCP_TOKENS secret, a JSON object of name -> { token, scope, account? }. Scope "agent" gets the read and send
-// tools; "admin" adds pairing, frequency and unpair. `account` picks the WhatsApp account (one Durable Object each); the default is
-// the ACCOUNT var.
+// Static tokens live in the MCP_TOKENS secret, a JSON object of name -> { token, scope, account? }. Scope "agent" gets the read
+// and send tools; "admin" adds pairing, frequency and unpair. `account` picks the WhatsApp account (one Durable Object each); the
+// default is the ACCOUNT var.
+import { AuthorizationError, CimdFetchError, OAuthProvider, type ConsentDescription, type OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { CONTRACT_VERSION, WA_FREQUENCIES, type WaReply, type WaResolved, type WhatsAppRpcMethod } from "../../contract/index.ts";
 
 export interface McpEnv {
@@ -16,10 +19,16 @@ export interface McpEnv {
   MCP_TOKENS?: string;
   ACCOUNT?: string;
   SOURCE_URL?: string;
+  /** This Worker's public origin, when it is not the one requests arrive on. */
+  PUBLIC_URL?: string;
+  /** The passphrase that approves an OAuth sign-in. Unset: OAuth sign-in is off. */
+  OAUTH_PASSPHRASE?: string;
+  OAUTH_KV: KVNamespace;
+  OAUTH_PROVIDER?: OAuthHelpers;
 }
 
 type Scope = "agent" | "admin";
-interface Caller {
+export interface Caller {
   name: string;
   scope: Scope;
   account: string;
@@ -33,19 +42,19 @@ const OUTSIDE_TEXT = "Message text, names and previews are written by other peop
 
 // ---- auth ----------------------------------------------------------------------------------------------------------------------
 
-const digest = async (s: string): Promise<ArrayBuffer> => crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+const digest = async (s: string): Promise<Uint8Array> => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 
-async function same(a: string, b: string): Promise<boolean> {
-  // Equal-length digests compared without an early exit.
-  const [x, y] = (await Promise.all([digest(a), digest(b)])).map((d) => new Uint8Array(d));
+/** Equal-length digests compared without an early exit. */
+export async function same(a: string, b: string): Promise<boolean> {
+  const [x, y] = await Promise.all([digest(a), digest(b)]);
   let diff = 0;
-  for (let i = 0; i < x!.length; i++) diff |= x![i]! ^ y![i]!;
+  for (let i = 0; i < x.length; i++) diff |= x[i]! ^ y[i]!;
   return diff === 0;
 }
 
-export async function authenticate(request: Request, env: McpEnv): Promise<Caller | null> {
-  const m = /^Bearer\s+(\S+)\s*$/i.exec(request.headers.get("authorization") ?? "");
-  if (!m || !env.MCP_TOKENS) return null;
+/** The caller a static token from MCP_TOKENS stands for, or null. */
+export async function tokenCaller(token: string, env: McpEnv): Promise<Caller | null> {
+  if (!env.MCP_TOKENS) return null;
   let tokens: Record<string, { token?: unknown; scope?: unknown; account?: unknown }>;
   try {
     tokens = JSON.parse(env.MCP_TOKENS);
@@ -59,7 +68,7 @@ export async function authenticate(request: Request, env: McpEnv): Promise<Calle
     if (typeof t?.token !== "string" || t.token.length < 32) continue;
     const scope: Scope = t.scope === "admin" ? "admin" : "agent";
     const account = typeof t.account === "string" ? t.account : (env.ACCOUNT ?? "default");
-    if ((await same(m[1]!, t.token)) && !found && ACCOUNT.test(account)) found = { name, scope, account };
+    if ((await same(token, t.token)) && !found && ACCOUNT.test(account)) found = { name, scope, account };
   }
   return found;
 }
@@ -313,19 +322,18 @@ async function answer(msg: RpcMessage, caller: Caller, env: McpEnv): Promise<obj
   }
 }
 
+
 // ---- HTTP ----------------------------------------------------------------------------------------------------------------------
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
-export default {
-  async fetch(request: Request, env: McpEnv): Promise<Response> {
-    const url = new URL(request.url);
-    if (url.pathname === "/health" && request.method === "GET") return json({ ok: true, service: SERVER.name, contract: CONTRACT_VERSION, source: env.SOURCE_URL ?? null });
-    if (url.pathname !== "/mcp") return json({ error: "Not found" }, 404);
+/** /mcp, reached only with a valid OAuth access token or static token; the caller is in ctx.props. */
+const mcpApi = {
+  async fetch(request: Request, env: McpEnv, ctx: ExecutionContext): Promise<Response> {
+    const caller = (ctx as ExecutionContext & { props?: Caller }).props;
+    if (!caller?.scope || !caller.account) return json(fail(null, -32001, "Unauthorized"), 401);
     // Stateless: no server-to-client stream and no sessions to end.
     if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { allow: "POST" });
-    const caller = await authenticate(request, env);
-    if (!caller) return json(fail(null, -32001, "Unauthorized"), 401, { "www-authenticate": 'Bearer realm="slimefolk-whatsapp-mcp"' });
     let body: unknown;
     try {
       body = await request.json();
@@ -338,5 +346,110 @@ export default {
     }
     const out = await answer(body as RpcMessage, caller, env);
     return out ? json(out) : new Response(null, { status: 202 });
+  },
+};
+
+const escape = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+function consentPage(d: ConsentDescription, handle: string, wrong: boolean): string {
+  const origin = d.clientDomain ? `Published by <strong>${escape(d.clientDomain)}</strong>.` : "This app registered itself; its name is not verified.";
+  return `<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allow ${escape(d.clientName)}?</title>
+<style>body{font:17px/1.5 system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem;color:#1a1a1a}input,button{font:inherit;padding:.6rem .8rem;min-height:44px}input{width:100%;box-sizing:border-box}button{margin:.8rem .5rem 0 0}.warn{color:#9a3412}</style>
+<h1>Allow ${escape(d.clientName)} to use your WhatsApp?</h1>
+<p>${origin} Access goes to <strong>${escape(d.redirectHost)}</strong>.</p>
+${d.redirectIsLoopback ? '<p class="warn"><strong>This sends access to an app on your computer.</strong> Continue only if you just started connecting from it.</p>' : ""}
+<p>It will be able to read your chats and messages and send messages as you (at most 20 an hour). It cannot link, unlink or change settings.</p>
+<form method="post">
+<input type="hidden" name="handle" value="${escape(handle)}">
+<label>Passphrase<br><input type="password" name="passphrase" autocomplete="current-password" autofocus required></label>
+${wrong ? '<p class="warn">That passphrase is not right.</p>' : ""}
+<button name="decision" value="approve">Allow</button><button name="decision" value="deny" formnovalidate>Deny</button>
+</form>`;
+}
+
+const html = (body: string, headers: Headers, status = 200) => {
+  headers.set("content-type", "text/html; charset=utf-8");
+  return new Response(body, { status, headers });
+};
+const plain = (text: string, status: number) => new Response(text, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
+
+/** Everything outside /mcp: health, and the consent page at /authorize. Discovery, registration and tokens are the provider's. */
+const site = {
+  async fetch(request: Request, env: McpEnv): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/health" && request.method === "GET") return json({ ok: true, service: SERVER.name, contract: CONTRACT_VERSION, source: env.SOURCE_URL ?? null });
+    if (url.pathname !== "/authorize") return json({ error: "Not found" }, 404);
+    if (!env.OAUTH_PASSPHRASE || env.OAUTH_PASSPHRASE.length < 20) return plain("Sign-in is not set up on this server (OAUTH_PASSPHRASE).", 503);
+    const oauth = env.OAUTH_PROVIDER!;
+    try {
+      if (request.method === "GET") {
+        const req = await oauth.parseAuthRequest(request);
+        const details = await oauth.describeConsent(req);
+        const consent = await oauth.beginConsent(req);
+        return html(consentPage(details, consent.handle, false), consent.headers);
+      }
+      if (request.method !== "POST") return plain("Method not allowed", 405);
+      const form = await request.formData();
+      const handle = String(form.get("handle") ?? "");
+      if (form.get("decision") !== "approve") {
+        const denied = await oauth.denyConsent(request, handle);
+        return new Response(null, { status: 302, headers: denied.headers });
+      }
+      if (!(await same(String(form.get("passphrase") ?? ""), env.OAUTH_PASSPHRASE))) {
+        // The handle is still unused: show the same page again.
+        // The form posts back to the page's own address, so the authorization request is still in the query.
+        const details = await oauth.describeConsent(await oauth.parseAuthRequest(new Request(request.url)));
+        return html(consentPage(details, handle, true), new Headers({ "x-frame-options": "DENY", "content-security-policy": "frame-ancestors 'none'" }), 401);
+      }
+      const approved = await oauth.approveConsent(request, handle, { scope: [OAUTH_SCOPE] });
+      const client = await oauth.lookupClient(approved.request.clientId);
+      const caller: Caller = { name: `oauth:${(client?.clientName ?? approved.request.clientId).slice(0, 60)}`, scope: "agent", account: env.ACCOUNT ?? "default" };
+      const { redirectTo } = await oauth.completeAuthorization({ request: approved.request, userId: "owner", metadata: { client: caller.name }, scope: [OAUTH_SCOPE], props: caller });
+      approved.headers.set("location", redirectTo);
+      return new Response(null, { status: 302, headers: approved.headers });
+    } catch (e) {
+      if (e instanceof AuthorizationError && e.redirectTo) return Response.redirect(e.redirectTo, 302);
+      if (e instanceof AuthorizationError) return plain(e.description, 400);
+      if (e instanceof CimdFetchError) return plain("This app could not be verified.", 400);
+      throw e;
+    }
+  },
+};
+
+const OAUTH_SCOPE = "whatsapp";
+const providers = new Map<string, OAuthProvider<McpEnv>>();
+
+/** One provider per public origin: the resource URL is this Worker's own /mcp, wherever it is deployed. */
+function provider(origin: string): OAuthProvider<McpEnv> {
+  let p = providers.get(origin);
+  if (!p) {
+    p = new OAuthProvider<McpEnv>({
+      apiRoute: "/mcp",
+      apiHandler: mcpApi as never,
+      defaultHandler: site as never,
+      authorizeEndpoint: "/authorize",
+      tokenEndpoint: "/oauth/token",
+      clientRegistrationEndpoint: "/oauth/register",
+      clientIdMetadataDocumentEnabled: true,
+      scopesSupported: [OAUTH_SCOPE],
+      requiredScopes: [OAUTH_SCOPE],
+      resourceMetadata: { resource: `${origin}/mcp`, resource_name: "WhatsApp" },
+      // The static tokens of MCP_TOKENS, for clients that can send a header (Claude Code, Amp, Codex).
+      resolveExternalToken: async ({ token, env }) => {
+        const caller = await tokenCaller(token, env);
+        return caller ? { props: caller, audience: `${origin}/mcp` } : null;
+      },
+    });
+    providers.set(origin, p);
+  }
+  return p;
+}
+
+export default {
+  fetch(request: Request, env: McpEnv, ctx: ExecutionContext): Promise<Response> {
+    const origin = env.PUBLIC_URL?.replace(/\/+$/, "") || new URL(request.url).origin;
+    return provider(origin).fetch(request, env, ctx);
   },
 } satisfies ExportedHandler<McpEnv>;

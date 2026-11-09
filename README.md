@@ -93,7 +93,7 @@ Changes take effect only after a redeploy. The first deploy runs the `v1-whatsap
 
 `mcp/` is a second, optional Worker: a remote MCP server (Streamable HTTP, stateless) that lets AI agents read and send WhatsApp messages. It is the only public surface; it reaches the program above through a service binding, so the program itself keeps no address.
 
-- **Auth:** a bearer token per agent, from the `MCP_TOKENS` secret: `{"<name>": {"token": "<32+ chars>", "scope": "agent" | "admin", "account": "<optional>"}}`. Tokens shorter than 32 characters are ignored.
+- **Auth, two ways.** *OAuth* for clients that sign in (claude.ai, Claude Desktop and mobile connectors): the Worker is its own authorization server (`@cloudflare/workers-oauth-provider`, dynamic registration and client metadata documents), and approving a client asks for the `OAUTH_PASSPHRASE` secret. OAuth always gets the `agent` scope. *Static bearer tokens* for clients that can send a header (Claude Code, Amp, Codex): one per agent, from the `MCP_TOKENS` secret: `{"<name>": {"token": "<32+ chars>", "scope": "agent" | "admin", "account": "<optional>"}}`. Tokens shorter than 32 characters are ignored.
 - **Scopes:** `agent` gets `whatsapp_status`, `whatsapp_list_chats`, `whatsapp_find_chat`, `whatsapp_read_chat`, `whatsapp_search`, `whatsapp_history`, `whatsapp_contact`, `whatsapp_refresh`, `whatsapp_fetch_older` and `whatsapp_send`. `admin` adds `whatsapp_start_pairing`, `whatsapp_cancel_pairing`, `whatsapp_set_frequency` and `whatsapp_unpair`. `configure`, `rewrapAll` and voice notes are never exposed.
 - **Account:** each token uses its own `account` or the `ACCOUNT` var (one Durable Object, one linked phone, per account).
 - Tools accept a chat id or a name or number, which is resolved first; a name that matches several chats is refused with the candidates.
@@ -101,11 +101,12 @@ Changes take effect only after a redeploy. The first deploy runs the `v1-whatsap
 Deploy it after the program:
 
 ```sh
+pnpm run deploy:mcp            # creates the OAUTH_KV namespace on the first deploy
 pnpm exec wrangler secret put MCP_TOKENS --config mcp/wrangler.jsonc
-pnpm run deploy:mcp
+pnpm exec wrangler secret put OAUTH_PASSPHRASE --config mcp/wrangler.jsonc   # 20+ characters; leave unset to turn OAuth off
 ```
 
-Then point an MCP client at `https://slimefolk-whatsapp-mcp.<your-subdomain>.workers.dev/mcp` with the header `Authorization: Bearer <token>`. To link a phone, call `whatsapp_start_pairing` with an admin token and type the code on the phone under WhatsApp, Linked devices, Link with phone number.
+Then point an MCP client at `https://slimefolk-whatsapp-mcp.<your-subdomain>.workers.dev/mcp`: as a custom connector in claude.ai (it signs in by OAuth), or with the header `Authorization: Bearer <token>`. To link a phone, call `whatsapp_start_pairing` with an admin token and type the code on the phone under WhatsApp, Linked devices, Link with phone number.
 
 ## Licence
 

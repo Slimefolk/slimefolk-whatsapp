@@ -2,5 +2,6 @@
 declare namespace Cloudflare {
   interface Env {
     FAKE_WA: DurableObjectNamespace;
+    OAUTH_KV: KVNamespace;
   }
 }

@@ -14,6 +14,8 @@ export default defineConfig({
       miniflare: {
         bindings: { KEY_ENCRYPTION_KEY: "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI" },
         durableObjects: { FAKE_WA: { className: "FakeWA", useSQLite: true } },
+        // The MCP Worker's OAuth storage (test/mcp.test.ts).
+        kvNamespaces: ["OAUTH_KV"],
       },
     }),
   ],
